@@ -13,7 +13,7 @@ digger_card = widgets.Button(
     layout=widgets.Layout(
         width='200px',
         height='150px',
-        border='2px solid #dee2e6',
+        border='2px solidrgb(146, 230, 167)',
         border_radius='8px',
         margin='10px'
     ),
@@ -40,18 +40,21 @@ file_card = widgets.Button(
     )
 )
 
-# Создание форм ввода
+# Создание форм ввода для Digger
+# Поле для ввода логина
 login_input = widgets.Text(
     description='Логин:',
     placeholder='i.ivanov',
     style=dict(description_width='100px')
 )
 
+# Поле для ввода пароля
 password_input = widgets.Password(
     description='Пароль:',
     style=dict(description_width='100px')
 )
 
+# Поле для ввода ID запроса или ссылки
 query_input = widgets.Text(
     description='ID запроса/Ссылка:',
     placeholder='Введите идентификатор запроса',
@@ -65,18 +68,35 @@ file_upload = widgets.FileUpload(
     layout=widgets.Layout(width='400px')
 )
 
+# Кнопки для выполнения действий
+digger_execute_button = widgets.Button(
+    description='Выполнить запрос',
+    icon='play',
+    style=dict(button_color='#4CAF50', font_weight='bold'),
+    layout=widgets.Layout(width='200px', margin='10px 0px')
+)
+
+file_process_button = widgets.Button(
+    description='Обработать файл',
+    icon='play',
+    style=dict(button_color='#4CAF50', font_weight='bold'),
+    layout=widgets.Layout(width='200px', margin='10px 0px')
+)
+
 # Создание форм
 digger_form = widgets.VBox([
     widgets.HTML(value='<h3>Авторизация в Digger</h3>'),
     login_input,
     password_input,
-    query_input
+    query_input,
+    digger_execute_button
 ])
 
 file_form = widgets.VBox([
     widgets.HTML(value='<h3>Загрузка файла CSV</h3>'),
     file_upload,
-    widgets.Output()
+    widgets.Output(),
+    file_process_button 
 ])
 
 # Контейнер для карточек
@@ -86,14 +106,6 @@ cards_container = widgets.HBox([
     justify_content='center',
     margin='20px 0px'
 ))
-
-# Создаем кнопку загрузки
-load_button = widgets.Button(
-    description='Загрузить данные в калькулятор',
-    icon='check',
-    style=dict(button_color='#4CAF50', font_weight='bold'),
-    layout=widgets.Layout(width='300px', margin='20px 0px')
-)
 
 # Создаем контейнер для вывода конфигурации
 config_output = widgets.Output()
@@ -130,52 +142,48 @@ def on_file_click(b):
         form_container.clear_output()
         display(file_form)
 
-def on_load_button_click(b):
-    """Обработчик нажатия кнопки загрузки"""
-    with config_output:
-        config_output.clear_output()
-        print("Текущая конфигурация:")
-        #Дебаг-функция для проверки конфигурации, к удалению
-        print(get_data_fetch_config())
-
-# Привязка обработчиков к кнопкам
-digger_card.on_click(on_digger_click)
-file_card.on_click(on_file_click)
-
-# Привязываем обработчик к кнопке
-load_button.on_click(on_load_button_click)
-
-def get_data_fetch_config():
-    """Возвращает текущую конфигурацию загрузки данных"""
-    config = {
-        'type': current_method
-    }
-    
-    if current_method == 'digger':
-        config.update({
+def get_data_fetch_config(method):
+    """Возвращает конфигурацию загрузки данных в зависимости от метода"""
+    if method == 'digger':
+        return {
+            'type': 'digger',
             'auth_login': login_input.value,
             'auth_pass': password_input.value,
-            'query_id': query_input.value,
-            'csv_file': None
-        })
+            'query_id': query_input.value
+        }
     else:
         uploaded_files = list(file_upload.value.values())
         csv_content = uploaded_files[0]['content'] if uploaded_files else None
         
-        config.update({
-            'auth_login': None,
-            'auth_pass': None,
-            'query_id': None,
-            'csv_file': csv_content
-        })
-    
-    return config
+        return {
+            'type': 'file',
+            'file_content': csv_content
+        }
+
+def on_digger_execute(b):
+    """Обработчик выполнения запроса к Digger"""
+    with config_output:
+        config_output.clear_output()
+        print("Конфигурация для Digger:")
+        print(get_data_fetch_config('digger'))
+
+def on_file_process(b):
+    """Обработчик обработки файла"""
+    with config_output:
+        config_output.clear_output()
+        print("Конфигурация для CSV:")
+        print(get_data_fetch_config('file'))
+
+# Привязка обработчиков к кнопкам
+digger_card.on_click(on_digger_click)
+file_card.on_click(on_file_click)
+digger_execute_button.on_click(on_digger_execute)
+file_process_button.on_click(on_file_process)
 
 def display_interface():
     """Отображает весь интерфейс"""
     display(cards_container)
     display(form_container)
-    display(load_button)
     display(config_output)
     with form_container:
         display(digger_form)
