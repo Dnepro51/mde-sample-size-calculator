@@ -13,7 +13,7 @@ digger_card = widgets.Button(
     layout=widgets.Layout(
         width='200px',
         height='150px',
-        border='2px solidrgb(146, 230, 167)',
+        border='2px solid rgb(146, 230, 167)',  # Исправлен пробел
         border_radius='8px',
         margin='10px'
     ),
@@ -41,20 +41,17 @@ file_card = widgets.Button(
 )
 
 # Создание форм ввода для Digger
-# Поле для ввода логина
 login_input = widgets.Text(
     description='Логин:',
     placeholder='i.ivanov',
     style=dict(description_width='100px')
 )
 
-# Поле для ввода пароля
 password_input = widgets.Password(
     description='Пароль:',
     style=dict(description_width='100px')
 )
 
-# Поле для ввода ID запроса или ссылки
 query_input = widgets.Text(
     description='ID запроса/Ссылка:',
     placeholder='Введите идентификатор запроса',
@@ -96,7 +93,7 @@ file_form = widgets.VBox([
     widgets.HTML(value='<h3>Загрузка файла CSV</h3>'),
     file_upload,
     widgets.Output(),
-    file_process_button 
+    file_process_button
 ])
 
 # Контейнер для карточек
@@ -107,7 +104,7 @@ cards_container = widgets.HBox([
     margin='20px 0px'
 ))
 
-# Создаем контейнер для вывода конфигурации
+# Контейнер для вывода конфигурации
 config_output = widgets.Output()
 
 def update_card_styles():
@@ -142,6 +139,14 @@ def on_file_click(b):
         form_container.clear_output()
         display(file_form)
 
+def get_uploaded_files():
+    """Возвращает список загруженных файлов, независимо от типа file_upload.value."""
+    if isinstance(file_upload.value, dict):
+        return list(file_upload.value.values())
+    elif isinstance(file_upload.value, (tuple, list)):
+        return list(file_upload.value)
+    return []
+
 def get_data_fetch_config(method):
     """Возвращает конфигурацию загрузки данных в зависимости от метода"""
     if method == 'digger':
@@ -152,27 +157,42 @@ def get_data_fetch_config(method):
             'query_id': query_input.value
         }
     else:
-        uploaded_files = list(file_upload.value.values())
+        uploaded_files = get_uploaded_files()
         csv_content = uploaded_files[0]['content'] if uploaded_files else None
-        
         return {
             'type': 'file',
             'file_content': csv_content
         }
 
 def on_digger_execute(b):
-    """Обработчик выполнения запроса к Digger"""
+    """Обработчик выполнения запроса к Digger с валидаторами"""
     with config_output:
         config_output.clear_output()
-        print("Конфигурация для Digger:")
-        print(get_data_fetch_config('digger'))
+        errors = []
+        if not login_input.value.strip():
+            errors.append("Необходимо указать логин.")
+        if not password_input.value.strip():
+            errors.append("Необходимо указать пароль.")
+        if not query_input.value.strip():
+            errors.append("Необходимо указать ID запроса или ссылку.")
+
+        if errors:
+            for err in errors:
+                print(f"Ошибка: {err}")
+        else:
+            print("Конфигурация для Digger:")
+            print(get_data_fetch_config('digger'))
 
 def on_file_process(b):
-    """Обработчик обработки файла"""
+    """Обработчик обработки файла с валидаторами"""
     with config_output:
         config_output.clear_output()
-        print("Конфигурация для CSV:")
-        print(get_data_fetch_config('file'))
+        uploaded_files = get_uploaded_files()
+        if not uploaded_files:
+            print("Ошибка: Необходимо загрузить CSV-файл.")
+        else:
+            print("Конфигурация для CSV:")
+            print(get_data_fetch_config('file'))
 
 # Привязка обработчиков к кнопкам
 digger_card.on_click(on_digger_click)
