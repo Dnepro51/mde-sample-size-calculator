@@ -1,5 +1,14 @@
 import ipywidgets as widgets
-from IPython.display import display
+import json
+import os
+from DataLoader.data_loader import load_data_from_digger, load_data_from_csv
+from IPython.display import display, clear_output
+import time
+import threading
+
+# Определяем путь к файлу с учетными данными
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+credentials_path = os.path.join(project_root, 'login_pass_for_tests.json')
 
 # ============= Глобальные переменные =============
 current_method = 'digger'  # Текущий выбранный метод загрузки данных
@@ -43,12 +52,14 @@ file_card = widgets.Button(
 # ============= Создание элементов ввода =============
 # Поля ввода для Digger
 login_input = widgets.Text(
+    value=json.load(open(credentials_path))['login'],
     description='Логин:',
     placeholder='i.ivanov',
     style=dict(description_width='100px')
 )
 
 password_input = widgets.Password(
+    value=json.load(open(credentials_path))['password'],
     description='Пароль:',
     style=dict(description_width='100px')
 )
@@ -66,6 +77,17 @@ file_upload = widgets.FileUpload(
     description='Выберите файл:',
     layout=widgets.Layout(width='400px')
 )
+
+# Добавляем виджет для отображения статуса
+loading_status = widgets.HTML(
+    value='',
+    layout=widgets.Layout(margin='10px 0px')
+)
+
+# Создаем контейнер для виджета статуса
+status_container = widgets.VBox([
+    loading_status
+], layout=widgets.Layout(display='none'))  # Скрываем по умолчанию
 
 # ============= Создание кнопок действий =============
 digger_execute_button = widgets.Button(
@@ -167,47 +189,93 @@ def on_file_click(b):
         form_container.clear_output()
         display(file_form)
 
-def on_digger_execute(b):
-    """Обработчик выполнения запроса к Digger"""
-    with config_output:
-        config_output.clear_output()
-        errors = []
-        if not login_input.value.strip():
-            errors.append("Необходимо указать логин.")
-        if not password_input.value.strip():
-            errors.append("Необходимо указать пароль.")
-        if not query_input.value.strip():
-            errors.append("Необходимо указать ID запроса или ссылку.")
-
-        if errors:
-            for err in errors:
-                print(f"Ошибка: {err}")
-        else: # Сюда  надо вписывать вызов функции для загрузки данных из Digger
-            print("Конфигурация для Digger:")
-            print(get_data_fetch_config('digger'))
-
-def on_file_process(b):
-    """Обработчик обработки файла"""
-    with config_output:
-        config_output.clear_output()
-        uploaded_files = get_uploaded_files()
-        if not uploaded_files:
-            print("Ошибка: Необходимо загрузить CSV-файл.")
-        else: # Сюда  надо вписывать вызов функции для загрузки данных из CSV файла
-            print("Конфигурация для CSV:")
-            print(get_data_fetch_config('file'))
-
-# ============= Привязка обработчиков =============
-digger_card.on_click(on_digger_click)
-file_card.on_click(on_file_click)
-digger_execute_button.on_click(on_digger_execute)
-file_process_button.on_click(on_file_process)
-
 # ============= Основная функция отображения =============
-def display_interface():
-    """Отображает весь интерфейс"""
+def display_interface(on_data_loaded=None):
+    """
+    Отображает интерфейс загрузки данных
+    Args:
+        on_data_loaded: callback-функция, которая будет вызвана после успешной загрузки данных
+    """
+    def on_digger_execute(b):
+        """Обработчик выполнения запроса к Digger"""
+        nonlocal on_data_loaded  # Важно! Добавляем nonlocal
+        config = get_data_fetch_config('digger')
+
+        with config_output:
+            config_output.clear_output()
+            errors = []
+            if not login_input.value.strip():
+                errors.append("Необходимо указать логин.")
+            if not password_input.value.strip():
+                errors.append("Необходимо указать пароль.")
+            if not query_input.value.strip():
+                errors.append("Необходимо указать ID запроса или ссылку.")
+
+            if errors:
+                for err in errors:
+                    print(f"Ошибка: {err}")
+            else:
+                # Показываем контейнер статуса
+                status_container.layout.display = 'flex'
+                
+                # Показываем статус загрузки
+                loading_status.value = '<div style="color: #4CAF50;">Загрузка данных из Digger...</div>'
+                
+                try:
+                    # Загружаем данные
+                    data = load_data_from_digger(config)
+                    
+                    # Обновляем статус
+                    loading_status.value = '<div style="color: #4CAF50;">Загрузка завершена!</div>'
+                    
+                    # Вызываем callback если он предоставлен
+                    if on_data_loaded:
+                        on_data_loaded(data)
+                
+                except Exception as e:
+                    loading_status.value = f'<div style="color: red;">Ошибка при загрузке: {str(e)}</div>'
+
+    def on_file_process(b):
+        """Обработчик обработки файла"""
+        nonlocal on_data_loaded
+        config = get_data_fetch_config('file')
+
+        with config_output:
+            config_output.clear_output()
+            uploaded_files = get_uploaded_files()
+            if not uploaded_files:
+                print("Ошибка: Необходимо загрузить CSV-файл.")
+            else:
+                # Показываем контейнер статуса
+                status_container.layout.display = 'flex'
+                
+                # Показываем статус загрузки
+                loading_status.value = '<div style="color: #4CAF50;">Обработка CSV файла...</div>'
+                
+                try:
+                    # Загружаем данные через функцию из data_loader
+                    data = load_data_from_csv(config)
+                    
+                    # Обновляем статус
+                    loading_status.value = '<div style="color: #4CAF50;">Обработка завершена!</div>'
+                    
+                    # Вызываем callback если он предоставлен
+                    if on_data_loaded:
+                        on_data_loaded(data)
+                
+                except Exception as e:
+                    loading_status.value = f'<div style="color: red;">Ошибка при обработке: {str(e)}</div>'
+
+    # Привязка обработчиков
+    digger_card.on_click(on_digger_click)
+    file_card.on_click(on_file_click)
+    digger_execute_button.on_click(on_digger_execute)  # Привязываем локальные обработчики
+    file_process_button.on_click(on_file_process)      # Привязываем локальные обработчики
+
+    # Отображение интерфейса
     display(cards_container)
     display(form_container)
+    display(status_container)
     display(config_output)
     with form_container:
         display(digger_form)
