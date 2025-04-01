@@ -1,11 +1,11 @@
 import ipywidgets as widgets
 from IPython.display import display
 
-# Глобальные переменные для хранения состояния
-current_method = 'digger'
-form_container = widgets.Output()
+# ============= Глобальные переменные =============
+current_method = 'digger'  # Текущий выбранный метод загрузки данных
+form_container = widgets.Output()  # Контейнер для отображения форм
 
-# Создание карточек
+# ============= Создание карточек выбора метода =============
 digger_card = widgets.Button(
     description='Загрузка из Digger',
     icon='search',
@@ -13,7 +13,7 @@ digger_card = widgets.Button(
     layout=widgets.Layout(
         width='200px',
         height='150px',
-        border='2px solid rgb(146, 230, 167)',  # Исправлен пробел
+        border='2px solid rgb(146, 230, 167)',
         border_radius='8px',
         margin='10px'
     ),
@@ -40,7 +40,8 @@ file_card = widgets.Button(
     )
 )
 
-# Создание форм ввода для Digger
+# ============= Создание элементов ввода =============
+# Поля ввода для Digger
 login_input = widgets.Text(
     description='Логин:',
     placeholder='i.ivanov',
@@ -58,6 +59,7 @@ query_input = widgets.Text(
     style=dict(description_width='100px')
 )
 
+# Поле загрузки файла
 file_upload = widgets.FileUpload(
     accept='.csv',
     multiple=False,
@@ -65,7 +67,7 @@ file_upload = widgets.FileUpload(
     layout=widgets.Layout(width='400px')
 )
 
-# Кнопки для выполнения действий
+# ============= Создание кнопок действий =============
 digger_execute_button = widgets.Button(
     description='Выполнить запрос',
     icon='play',
@@ -80,7 +82,7 @@ file_process_button = widgets.Button(
     layout=widgets.Layout(width='200px', margin='10px 0px')
 )
 
-# Создание форм
+# ============= Создание форм =============
 digger_form = widgets.VBox([
     widgets.HTML(value='<h3>Авторизация в Digger</h3>'),
     login_input,
@@ -96,7 +98,7 @@ file_form = widgets.VBox([
     file_process_button
 ])
 
-# Контейнер для карточек
+# ============= Создание контейнеров =============
 cards_container = widgets.HBox([
     digger_card, file_card
 ], layout=widgets.Layout(
@@ -104,11 +106,11 @@ cards_container = widgets.HBox([
     margin='20px 0px'
 ))
 
-# Контейнер для вывода конфигурации
-config_output = widgets.Output()
+config_output = widgets.Output()  # Контейнер для вывода конфигурации
 
+# ============= Вспомогательные функции =============
 def update_card_styles():
-    """Обновляет стили карточек"""
+    """Обновляет стили карточек в зависимости от выбранного метода"""
     digger_card.style.button_color = 'white'
     file_card.style.button_color = 'white'
     digger_card.layout.border = '2px solid #dee2e6'
@@ -121,26 +123,8 @@ def update_card_styles():
         file_card.style.button_color = '#e7eeff'
         file_card.layout.border = '2px solid #4a6baf'
 
-def on_digger_click(b):
-    """Обработчик нажатия на карточку Digger"""
-    global current_method
-    current_method = 'digger'
-    update_card_styles()
-    with form_container:
-        form_container.clear_output()
-        display(digger_form)
-
-def on_file_click(b):
-    """Обработчик нажатия на карточку File"""
-    global current_method
-    current_method = 'file'
-    update_card_styles()
-    with form_container:
-        form_container.clear_output()
-        display(file_form)
-
 def get_uploaded_files():
-    """Возвращает список загруженных файлов, независимо от типа file_upload.value."""
+    """Возвращает список загруженных файлов"""
     if isinstance(file_upload.value, dict):
         return list(file_upload.value.values())
     elif isinstance(file_upload.value, (tuple, list)):
@@ -164,8 +148,27 @@ def get_data_fetch_config(method):
             'file_content': csv_content
         }
 
+# ============= Обработчики событий =============
+def on_digger_click(b):
+    """Обработчик нажатия на карточку Digger"""
+    global current_method
+    current_method = 'digger'
+    update_card_styles()
+    with form_container:
+        form_container.clear_output()
+        display(digger_form)
+
+def on_file_click(b):
+    """Обработчик нажатия на карточку File"""
+    global current_method
+    current_method = 'file'
+    update_card_styles()
+    with form_container:
+        form_container.clear_output()
+        display(file_form)
+
 def on_digger_execute(b):
-    """Обработчик выполнения запроса к Digger с валидаторами"""
+    """Обработчик выполнения запроса к Digger"""
     with config_output:
         config_output.clear_output()
         errors = []
@@ -179,27 +182,28 @@ def on_digger_execute(b):
         if errors:
             for err in errors:
                 print(f"Ошибка: {err}")
-        else:
+        else: # Сюда  надо вписывать вызов функции для загрузки данных из Digger
             print("Конфигурация для Digger:")
             print(get_data_fetch_config('digger'))
 
 def on_file_process(b):
-    """Обработчик обработки файла с валидаторами"""
+    """Обработчик обработки файла"""
     with config_output:
         config_output.clear_output()
         uploaded_files = get_uploaded_files()
         if not uploaded_files:
             print("Ошибка: Необходимо загрузить CSV-файл.")
-        else:
+        else: # Сюда  надо вписывать вызов функции для загрузки данных из CSV файла
             print("Конфигурация для CSV:")
             print(get_data_fetch_config('file'))
 
-# Привязка обработчиков к кнопкам
+# ============= Привязка обработчиков =============
 digger_card.on_click(on_digger_click)
 file_card.on_click(on_file_click)
 digger_execute_button.on_click(on_digger_execute)
 file_process_button.on_click(on_file_process)
 
+# ============= Основная функция отображения =============
 def display_interface():
     """Отображает весь интерфейс"""
     display(cards_container)
