@@ -13,27 +13,35 @@
     # pd.Series (df['column_name'])
 
 # На выходе:
-    # Визуализации
-    # Статистики
+    # {'statistics': 
+    #   {'base_statistics': {}, 
+    #    'quantiles': {}
+    #  'visualizations': 
+    #   {'histogram': {}, 
+    #    'cdf': {}, 
+    #    'scatter_plot': {}, 
+    #    'boxplot': {}}}
+
+
+import Statistics.statistics as stats
+import DataVisualizations.visualizations as vis
 
 def eda_stats(series):
     # Получаем результаты статистических функций
-    base_stats_result = base_statistics(series)
-    quantiles_result = quantiles(series)
-    iqr_result = iqr(series)
+    base_stats_result = stats.base_statistics(series)
+    quantiles_result = stats.quantiles(series)
 
     return {
         'base_statistics': base_stats_result, 
-        'quantiles': quantiles_result, 
-        'iqr': iqr_result
+        'quantiles': quantiles_result
     }
 
-def eda_visualizations(series):
+def eda_visualizations(series,pdf_df):
     # Получаем результаты визуализаций
-    histogram_fig = histogram(series)
-    cdf_fig = cdf(series)
-    scatter_fig = scatter_plot(series)
-    boxplot_fig = boxplot(series)
+    histogram_fig = vis.histogram(series)
+    cdf_fig = vis.cdf(pdf_df)
+    scatter_fig = vis.scatter_plot(series)
+    boxplot_fig = vis.boxplot(series)
 
     return {
         'histogram': histogram_fig, 
