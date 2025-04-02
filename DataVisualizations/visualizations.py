@@ -6,20 +6,20 @@ import pandas as pd
 
 def histogram(series, sample_size=10000):
     # Сэмплируем объекты
-    sample = series.sample(n=sample_size, replace=True)
+    sample = series.sample(n=sample_size, replace=True, random_state=42)
     
     fig = go.Figure()
     
     fig.add_trace(go.Histogram(
         x=sample,
-        name='Гистограмма распределения метрики',
+        name='Distribution Histogram',
         nbinsx=100
     ))
     
     fig.update_layout(
-        title='Гистограмма распределения',
-        xaxis_title='Значения',
-        yaxis_title='Количество',
+        title=f'Histogram (sample {sample_size})',
+        xaxis_title='Values',
+        yaxis_title='Count',
         showlegend=True,
         template='plotly_white'
     )
@@ -52,9 +52,9 @@ def cdf(pdf_df):
     ))
     
     fig.update_layout(
-        title='Кумулятивная функция распределения',
-        xaxis_title='Значения',
-        yaxis_title='Вероятность',
+        title='CDF',
+        xaxis_title='Values',
+        yaxis_title='Probability',
         showlegend=True,
         template='plotly_white'
     )
@@ -64,7 +64,7 @@ def cdf(pdf_df):
 
 def scatter_plot(series, sample_size=10000):
     # Сэмплируем объекты
-    sample = series.sample(n=sample_size, replace=True)
+    sample = series.sample(n=sample_size, replace=True, random_state=42)
     
     fig = go.Figure()
     
@@ -72,7 +72,7 @@ def scatter_plot(series, sample_size=10000):
         x=np.arange(len(sample)),
         y=sample,
         mode='markers',
-        name='Точечный график',
+        name='Scatter Plot',
         marker=dict(
             size=4,
             opacity=0.6
@@ -80,9 +80,9 @@ def scatter_plot(series, sample_size=10000):
     ))
     
     fig.update_layout(
-        title='Точечный график',
-        xaxis_title='Индекс',
-        yaxis_title='Значения',
+        title=f'Scatterplot (sample {sample_size})',
+        xaxis_title='Index',
+        yaxis_title='Values',
         showlegend=True,
         template='plotly_white'
     )
@@ -90,9 +90,9 @@ def scatter_plot(series, sample_size=10000):
     return fig
 
 
-def boxplot(series, sample_size=2000):
+def boxplot(series, sample_size=10000):
     # Сэмплируем объекты
-    sample = series.sample(n=sample_size, replace=True)
+    sample = series.sample(n=sample_size, replace=True, random_state=42)
     
     fig = go.Figure()
     
@@ -103,8 +103,8 @@ def boxplot(series, sample_size=2000):
     ))
     
     fig.update_layout(
-        title='Ящик с усами',
-        yaxis_title='Значения',
+        title=f'Boxplot (sample {sample_size})',
+        yaxis_title='Values',
         showlegend=True,
         template='plotly_white'
     )
