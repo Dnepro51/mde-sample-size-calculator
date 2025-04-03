@@ -40,3 +40,6 @@ Thumbs.db
 
 # Логин и пароль для тестов
 login_pass_for_tests.json
+
+# клод-файл
+CLAUDE.md
