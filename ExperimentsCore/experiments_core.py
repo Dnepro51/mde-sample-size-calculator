@@ -13,9 +13,10 @@ def discrete_dist_creation(series, round_digits=None, adaptive_rounding=True):
         adaptive_rounding (bool): Использовать ли адаптивное округление
         
     Returns:
-        tuple: (rv_discrete, df_dist), где
+        tuple: (rv_discrete, df_dist, round_digits), где
             rv_discrete - объект с дискретным распределением
             df_dist - DataFrame с значениями и их вероятностями
+            round_digits - использованное значение округления
     """
     # Очищаем данные от пропущенных значений
     data = series.dropna()
@@ -57,4 +58,4 @@ def discrete_dist_creation(series, round_digits=None, adaptive_rounding=True):
         'cumulative_probability': np.cumsum(pk)
     })
     
-    return rv, df_dist, round_digits 
+    return rv, df_dist, round_digits  # Возвращаем также использованное округление
