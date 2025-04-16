@@ -18,13 +18,14 @@ from IPython.display import display
 import pandas as pd
 
 
-def run_eda_analysis(selected_column, data_dict):
+def run_eda_analysis(selected_column, data_dict, on_eda_complete=None):
     """
     Запускает EDA анализ для выбранной колонки.
     
     Args:
         selected_column (str): Название выбранной колонки
         data_dict (dict): Словарь с данными, содержащий DataFrame в ключе 'df'
+        on_eda_complete (callable): Функция обратного вызова после завершения EDA
     """
     # Получаем данные для выбранной колонки
     series = data_dict['df'][selected_column]
@@ -46,8 +47,12 @@ def run_eda_analysis(selected_column, data_dict):
         print("Visualizations:")
         for graph in eda_results['visualizations']['multiplot']:
             display(graph)
+
+        if on_eda_complete:
+            on_eda_complete()
         
         return eda_results
+    
         
     except Exception as e:
         print(f"Error during EDA analysis: {str(e)}")

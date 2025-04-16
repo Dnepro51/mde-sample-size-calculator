@@ -73,16 +73,3 @@ def pdf_creation(series, n_points=100):
     })
     
     return df
-
-def discrete_distribution_creation(series):
-    """
-    Создает дискретное распределение для числового ряда.
-    
-    Args:
-        series (pd.Series): Входной числовой ряд
-        
-    Returns:
-        dict: Словарь с частотным распределением
-    """
-    pass
-
