@@ -10,6 +10,18 @@ import threading
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 credentials_path = os.path.join(project_root, 'login_pass_for_tests.json')
 
+# Функция для безопасной загрузки учетных данных
+def load_credentials():
+    try:
+        with open(credentials_path, 'r') as f:
+            credentials = json.load(f)
+            return credentials.get('login', ''), credentials.get('password', '')
+    except (FileNotFoundError, json.JSONDecodeError):
+        return '', ''
+
+# Загружаем учетные данные
+default_login, default_password = load_credentials()
+
 # ============= Глобальные переменные =============
 current_method = 'digger'  # Текущий выбранный метод загрузки данных
 form_container = widgets.Output()  # Контейнер для отображения форм
@@ -52,14 +64,14 @@ file_card = widgets.Button(
 # ============= Создание элементов ввода =============
 # Поля ввода для Digger
 login_input = widgets.Text(
-    value=json.load(open(credentials_path))['login'],
+    value=default_login,
     description='Логин:',
     placeholder='i.ivanov',
     style=dict(description_width='100px')
 )
 
 password_input = widgets.Password(
-    value=json.load(open(credentials_path))['password'],
+    value=default_password,
     description='Пароль:',
     style=dict(description_width='100px')
 )
