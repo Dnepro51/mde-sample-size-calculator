@@ -43,3 +43,6 @@ login_pass_for_tests.json
 
 # клод-файл
 CLAUDE.md
+
+# Папка с примерами
+Examples/
