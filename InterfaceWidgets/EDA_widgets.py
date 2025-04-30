@@ -35,6 +35,10 @@ def run_eda_analysis(selected_column, data_dict, on_eda_complete=None):
     stats_output = widgets.Output()
     display(stats_output)
     
+    # Создаем виджет Output для визуализаций
+    vis_output = widgets.Output()
+    display(vis_output)
+    
     try:
         # Запускаем EDA анализ
         eda_results = eda.EDA(series)
@@ -49,10 +53,17 @@ def run_eda_analysis(selected_column, data_dict, on_eda_complete=None):
             quantiles_df = pd.DataFrame([eda_results['statistics']['quantiles']])
             display(quantiles_df)
         
-        # Выводим графики вертикально друг под другом
-        print("Visualizations:")
-        for graph in eda_results['visualizations']['multiplot']:
-            display(graph)
+        # Выводим первый график (гистограмму) в виджет
+        with vis_output:
+            print("Visualizations:")
+            # Получаем только гистограмму (первый график)
+            histogram = eda_results['visualizations']['multiplot'][0]
+            display(histogram)
+        
+        # Выводим остальные графики напрямую (пока не трогаем)
+        for i, graph in enumerate(eda_results['visualizations']['multiplot']):
+            if i > 0:  # Пропускаем гистограмму, она уже отображена
+                display(graph)
 
         if on_eda_complete:
             on_eda_complete()
