@@ -12,9 +12,10 @@ def display_distribution_info(rv, df_dist, round_digits): # вызывается
         round_digits: Количество знаков после запятой
 
     Returns:
-        display(rv, df_dist, round_digits)
+        None (отображение делегировано виджету)
     """
-    display(rv, df_dist, round_digits)
+    # Информация о распределении уже отображается в виджете distribution_info_output
+    pass
 
 def experiment_config_creation(
         statistics, 
