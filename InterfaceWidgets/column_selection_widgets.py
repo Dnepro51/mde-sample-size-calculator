@@ -34,13 +34,18 @@ def column_selection_widgets(data_dict, on_column_selected=None):
         layout=widgets.Layout(width='200px', margin='10px 0px')
     )
     
+    # Создаем виджет Output для вывода результатов
+    output = widgets.Output()
+    
     # Обработка выбора
     def on_analyze_click(b):
         # print("Кнопка нажата!")
         selected_column = column_selector.value
         # print(f"Выбрана колонка: {selected_column}")
         # Показываем предпросмотр выбранной колонки
-        display(data_dict['df'][selected_column].head())
+        with output:
+            output.clear_output(wait=True)
+            display(data_dict['df'][selected_column].head())
         if on_column_selected:
             # print("Вызываем callback функцию...")
             on_column_selected(selected_column, data_dict)
@@ -52,7 +57,7 @@ def column_selection_widgets(data_dict, on_column_selected=None):
     analyze_button.on_click(on_analyze_click)
     
     # Отображение виджетов
-    column_selection_container = widgets.VBox([column_selector, analyze_button])
+    column_selection_container = widgets.VBox([column_selector, analyze_button, output])
     display(column_selection_container)
     
     
