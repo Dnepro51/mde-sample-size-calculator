@@ -16,6 +16,7 @@
 import EDA.EDA as eda
 from IPython.display import display
 import pandas as pd
+import ipywidgets as widgets
 
 
 def run_eda_analysis(selected_column, data_dict, on_eda_complete=None):
@@ -30,18 +31,23 @@ def run_eda_analysis(selected_column, data_dict, on_eda_complete=None):
     # Получаем данные для выбранной колонки
     series = data_dict['df'][selected_column]
     
+    # Создаем виджеты Output для статистик
+    stats_output = widgets.Output()
+    display(stats_output)
+    
     try:
         # Запускаем EDA анализ
         eda_results = eda.EDA(series)
         
         # Выводим статистики в виде датафреймов
-        print("Base Statistics:")
-        base_stats_df = pd.DataFrame([eda_results['statistics']['base_statistics']])
-        display(base_stats_df)
-        
-        print("Quantiles:")
-        quantiles_df = pd.DataFrame([eda_results['statistics']['quantiles']])
-        display(quantiles_df)
+        with stats_output:
+            print("Base Statistics:")
+            base_stats_df = pd.DataFrame([eda_results['statistics']['base_statistics']])
+            display(base_stats_df)
+            
+            print("Quantiles:")
+            quantiles_df = pd.DataFrame([eda_results['statistics']['quantiles']])
+            display(quantiles_df)
         
         # Выводим графики вертикально друг под другом
         print("Visualizations:")
