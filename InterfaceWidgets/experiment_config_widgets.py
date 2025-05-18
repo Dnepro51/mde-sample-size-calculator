@@ -41,27 +41,27 @@ mde_helper = widgets.HTML(
     value='<span style="padding-left:5px; line-height:32px;">%</span>'
 )
 
-# Виджет для отображения рассчитанного нового среднего
-calculated_mean_display = widgets.HTML(
-    value='<span style="color:#4a6baf; padding-left:150px;">Новое среднее: <span id="new-mean-value">—</span></span>',
+# Виджет для отображения рассчитанной статистики
+calculated_stat_display = widgets.HTML(
+    value='<span style="color:#4a6baf; padding-left:150px;">Текущая статистика: — | Новая статистика: —</span>',
     layout=widgets.Layout(margin='5px 0px')
 )
 
 # Объединяем MDE и подсказку в один ряд
 mde_container = widgets.HBox([mde_input, mde_helper])
 
-# Контейнер для MDE ввода и отображения нового среднего
-mde_with_mean_container = widgets.VBox([
+# Контейнер для MDE ввода и отображения новой статистики
+mde_with_stat_container = widgets.VBox([
     mde_container,
-    calculated_mean_display
+    calculated_stat_display
 ])
 
-# Выбор статистики (пока только среднее)
+# Выбор статистики (подготовлено для расширения)
 statistic_dropdown = widgets.Dropdown(
-    options=[('mean', 'mean')],
+    options=[('Среднее', 'mean')],  # В будущем: [('Среднее', 'mean'), ('Медиана', 'median'), ...] 
     value='mean',
     description='Статистика:',
-    disabled=True,  # Отключаем, т.к. пока доступен только один вариант
+    disabled=False,  # Пока отключаем, т.к. пока доступен только один вариант
     style=dict(description_width='150px')
 )
 
@@ -124,7 +124,7 @@ config_container = widgets.VBox([
     config_header,
     alpha_dropdown,
     target_power_input,
-    mde_with_mean_container,
+    mde_with_stat_container,
     statistic_dropdown,
     test_method_dropdown,
     num_emulations_input,
@@ -166,62 +166,123 @@ def get_current_config():
     return config
 
 # ============= Основная функция отображения =============
-def display_experiment_config_interface(current_mean=None, on_config_created=None):
+def display_experiment_config_interface(current_statistics=None, on_config_created=None):
     """
     Отображает интерфейс конфигурации экспериментов.
     
     Args:
-        current_mean (float): Текущее среднее значение из распределения
+        current_statistics (dict): Словарь с текущими статистиками распределения
+                                 (ключи: 'mean', 'median', и т.д.)
         on_config_created (callable): Функция обратного вызова, которая будет вызвана
-                                     после создания конфигурации. Принимает словарь
-                                     с созданной конфигурацией.
+                                     после создания конфигурации.
     """
-    # Инициализируем отображение текущего среднего, если оно предоставлено
-    if current_mean is not None:
-        current_mean_formatted = round(current_mean, 4)
-        calculated_mean_display.value = f'<span style="color:#4a6baf; padding-left:150px;">Текущее среднее: {current_mean_formatted} | Новое среднее: <span id="new-mean-value">{current_mean_formatted}</span></span>'
+    # Если statistic_dropdown имеет пустое значение, устанавливаем его на mean
+    if not statistic_dropdown.value:
+        statistic_dropdown.value = 'mean'
+        
+    # Создадим словарь с переводами статистик для отображения
+    stat_translations = {
+        'mean': 'Среднее',
+        'median': 'Медиана',
+        'quantile': 'Квантиль',
+        'proportion': 'Доля'
+    }
     
-    # Функция для обновления отображения нового среднего значения
-    def update_calculated_mean(change):
-        if current_mean is not None:
+    # Если статистики не предоставлены, создаем пустой словарь
+    if current_statistics is None:
+        current_statistics = {}
+    
+    # Функция для расчета новой статистики на основе MDE и текущей статистики
+    def calculate_new_statistic(stat_type, mde_percent, current_value):
+        """
+        Рассчитывает новое значение статистики на основе MDE и текущего значения.
+        
+        Args:
+            stat_type (str): Тип статистики ('mean', 'median', и т.д.)
+            mde_percent (float): Процент MDE
+            current_value (float): Текущее значение статистики
+            
+        Returns:
+            float: Новое значение статистики
+        """
+        # В зависимости от типа статистики, применяем соответствующую формулу
+        if stat_type == 'mean':
+            # Для среднего: увеличиваем на процент MDE
+            return current_value * (1 + mde_percent/100)
+        elif stat_type == 'median':
+            # Для медианы: пока используем такую же формулу, как для среднего
+            # В будущем здесь может быть другая логика
+            return current_value * (1 + mde_percent/100)
+        elif stat_type == 'quantile':
+            # Для квантиля: пока используем такую же формулу, как для среднего
+            # В будущем здесь может быть другая логика
+            return current_value * (1 + mde_percent/100)
+        elif stat_type == 'proportion':
+            # Для доли: увеличиваем абсолютно на MDE/100, но не более 1
+            return min(current_value + mde_percent/100, 1.0)
+        else:
+            # По умолчанию возвращаем текущее значение
+            return current_value
+    
+    # Функция для обновления отображения текущей и новой статистики
+    def update_calculated_stat(change=None):
+        # Получаем текущий тип статистики
+        stat_type = statistic_dropdown.value
+        stat_name = stat_translations.get(stat_type, stat_type.capitalize())
+        
+        # Проверяем, есть ли текущее значение для выбранного типа статистики
+        if stat_type in current_statistics and current_statistics[stat_type] is not None:
+            current_value = current_statistics[stat_type]
+            current_formatted = round(current_value, 4)
+            
             try:
                 # Получаем текущее значение MDE в процентах
                 mde_value = mde_input.value if mde_input.value is not None else 0
                 
-                # Вычисляем новое среднее значение (текущее * (1 + MDE/100))
-                new_mean = current_mean * (1 + mde_value/100)
+                # Вычисляем новое значение статистики
+                new_value = calculate_new_statistic(stat_type, mde_value, current_value)
                 
                 # Округляем до 4 десятичных знаков
-                new_mean_formatted = round(new_mean, 4)
+                new_formatted = round(new_value, 4)
                 
                 # Обновляем отображение
-                calculated_mean_display.value = f'<span style="color:#4a6baf; padding-left:150px;">Текущее среднее: {current_mean_formatted} | Новое среднее: <span id="new-mean-value">{new_mean_formatted}</span></span>'
+                calculated_stat_display.value = f'<span style="color:#4a6baf; padding-left:150px;">Текущее {stat_name.lower()}: {current_formatted} | Новое {stat_name.lower()}: <span id="new-stat-value">{new_formatted}</span></span>'
             except (ValueError, TypeError):
-                # В случае ошибки, отображаем дефолтное значение
-                calculated_mean_display.value = f'<span style="color:#4a6baf; padding-left:150px;">Текущее среднее: {current_mean_formatted} | Новое среднее: <span id="new-mean-value">—</span></span>'
+                # В случае ошибки, отображаем только текущее значение
+                calculated_stat_display.value = f'<span style="color:#4a6baf; padding-left:150px;">Текущее {stat_name.lower()}: {current_formatted} | Новое {stat_name.lower()}: <span id="new-stat-value">—</span></span>'
+        else:
+            # Если нет текущего значения, отображаем сообщение о недоступности статистики
+            calculated_stat_display.value = f'<span style="color:#4a6baf; padding-left:150px;">{stat_name} недоступно для данного распределения</span>'
     
     # Привязываем обработчик к изменению значения MDE
-    mde_input.observe(update_calculated_mean, names='value')
+    mde_input.observe(update_calculated_stat, names='value')
     
-    # Определяем обработчик нажатия кнопки внутри функции, чтобы он имел доступ к on_config_created
+    # Привязываем обработчик к изменению типа статистики
+    statistic_dropdown.observe(update_calculated_stat, names='value')
+    
+    # Определяем обработчик нажатия кнопки
     def on_run_emulation_button_click(b):
         """
         Обработчик нажатия кнопки запуска эмуляции.
         Собирает конфигурацию и отображает её в формате JSON.
-        
-        Args:
-            b: Кнопка, на которую нажали (не используется)
         """
         # Получаем текущую конфигурацию
         config = get_current_config()
         
-        # Добавляем информацию о текущем и новом среднем значении, если доступно
-        if current_mean is not None:
+        # Получаем текущий тип статистики
+        stat_type = statistic_dropdown.value
+        
+        # Добавляем информацию о текущей и новой статистике, если доступно
+        if stat_type in current_statistics and current_statistics[stat_type] is not None:
             try:
                 mde_value = mde_input.value if mde_input.value is not None else 0
-                new_mean = current_mean * (1 + mde_value/100)
-                config['current_mean'] = current_mean
-                config['new_mean'] = round(new_mean, 4)
+                current_value = current_statistics[stat_type]
+                new_value = calculate_new_statistic(stat_type, mde_value, current_value)
+                
+                # Добавляем в конфигурацию
+                config['statistic_type'] = stat_type
+                config['current_statistic'] = current_value
+                config['new_statistic'] = round(new_value, 4)
             except (ValueError, TypeError):
                 pass
         
@@ -238,9 +299,8 @@ def display_experiment_config_interface(current_mean=None, on_config_created=Non
     # Привязываем обработчик к кнопке
     run_emulation_button.on_click(on_run_emulation_button_click)
     
-    # Вызываем обновление среднего при инициализации
-    if current_mean is not None:
-        update_calculated_mean({'new': mde_input.value})
+    # Вызываем обновление статистики при инициализации
+    update_calculated_stat()
     
     # Отображение интерфейса
     display(config_container)
