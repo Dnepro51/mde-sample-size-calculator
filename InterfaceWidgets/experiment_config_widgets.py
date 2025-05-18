@@ -41,8 +41,20 @@ mde_helper = widgets.HTML(
     value='<span style="padding-left:5px; line-height:32px;">%</span>'
 )
 
+# Виджет для отображения рассчитанного нового среднего
+calculated_mean_display = widgets.HTML(
+    value='<span style="color:#4a6baf; padding-left:150px;">Новое среднее: <span id="new-mean-value">—</span></span>',
+    layout=widgets.Layout(margin='5px 0px')
+)
+
 # Объединяем MDE и подсказку в один ряд
 mde_container = widgets.HBox([mde_input, mde_helper])
+
+# Контейнер для MDE ввода и отображения нового среднего
+mde_with_mean_container = widgets.VBox([
+    mde_container,
+    calculated_mean_display
+])
 
 # Выбор статистики (пока только среднее)
 statistic_dropdown = widgets.Dropdown(
@@ -112,7 +124,7 @@ config_container = widgets.VBox([
     config_header,
     alpha_dropdown,
     target_power_input,
-    mde_container,
+    mde_with_mean_container,
     statistic_dropdown,
     test_method_dropdown,
     num_emulations_input,
@@ -154,15 +166,43 @@ def get_current_config():
     return config
 
 # ============= Основная функция отображения =============
-def display_experiment_config_interface(on_config_created=None):
+def display_experiment_config_interface(current_mean=None, on_config_created=None):
     """
     Отображает интерфейс конфигурации экспериментов.
     
     Args:
+        current_mean (float): Текущее среднее значение из распределения
         on_config_created (callable): Функция обратного вызова, которая будет вызвана
                                      после создания конфигурации. Принимает словарь
                                      с созданной конфигурацией.
     """
+    # Инициализируем отображение текущего среднего, если оно предоставлено
+    if current_mean is not None:
+        current_mean_formatted = round(current_mean, 4)
+        calculated_mean_display.value = f'<span style="color:#4a6baf; padding-left:150px;">Текущее среднее: {current_mean_formatted} | Новое среднее: <span id="new-mean-value">{current_mean_formatted}</span></span>'
+    
+    # Функция для обновления отображения нового среднего значения
+    def update_calculated_mean(change):
+        if current_mean is not None:
+            try:
+                # Получаем текущее значение MDE в процентах
+                mde_value = mde_input.value if mde_input.value is not None else 0
+                
+                # Вычисляем новое среднее значение (текущее * (1 + MDE/100))
+                new_mean = current_mean * (1 + mde_value/100)
+                
+                # Округляем до 4 десятичных знаков
+                new_mean_formatted = round(new_mean, 4)
+                
+                # Обновляем отображение
+                calculated_mean_display.value = f'<span style="color:#4a6baf; padding-left:150px;">Текущее среднее: {current_mean_formatted} | Новое среднее: <span id="new-mean-value">{new_mean_formatted}</span></span>'
+            except (ValueError, TypeError):
+                # В случае ошибки, отображаем дефолтное значение
+                calculated_mean_display.value = f'<span style="color:#4a6baf; padding-left:150px;">Текущее среднее: {current_mean_formatted} | Новое среднее: <span id="new-mean-value">—</span></span>'
+    
+    # Привязываем обработчик к изменению значения MDE
+    mde_input.observe(update_calculated_mean, names='value')
+    
     # Определяем обработчик нажатия кнопки внутри функции, чтобы он имел доступ к on_config_created
     def on_run_emulation_button_click(b):
         """
@@ -174,6 +214,16 @@ def display_experiment_config_interface(on_config_created=None):
         """
         # Получаем текущую конфигурацию
         config = get_current_config()
+        
+        # Добавляем информацию о текущем и новом среднем значении, если доступно
+        if current_mean is not None:
+            try:
+                mde_value = mde_input.value if mde_input.value is not None else 0
+                new_mean = current_mean * (1 + mde_value/100)
+                config['current_mean'] = current_mean
+                config['new_mean'] = round(new_mean, 4)
+            except (ValueError, TypeError):
+                pass
         
         # Отображаем конфигурацию в формате JSON
         with config_output:
@@ -187,6 +237,10 @@ def display_experiment_config_interface(on_config_created=None):
     
     # Привязываем обработчик к кнопке
     run_emulation_button.on_click(on_run_emulation_button_click)
+    
+    # Вызываем обновление среднего при инициализации
+    if current_mean is not None:
+        update_calculated_mean({'new': mde_input.value})
     
     # Отображение интерфейса
     display(config_container)
