@@ -25,6 +25,69 @@ target_power_input = widgets.BoundedFloatText(
     layout=widgets.Layout(width='300px')
 )
 
+# MDE (минимальное различие, которое мы хотим обнаружить)
+mde_input = widgets.BoundedFloatText(
+    value=1.0,
+    min=0.1,
+    max=100.0,
+    step=0.5,
+    description='MDE:',
+    style=dict(description_width='150px'),
+    layout=widgets.Layout(width='250px')
+)
+
+# Подсказка для MDE
+mde_helper = widgets.HTML(
+    value='<span style="padding-left:5px; line-height:32px;">%</span>'
+)
+
+# Объединяем MDE и подсказку в один ряд
+mde_container = widgets.HBox([mde_input, mde_helper])
+
+# Выбор статистики (пока только среднее)
+statistic_dropdown = widgets.Dropdown(
+    options=[('mean', 'mean')],
+    value='mean',
+    description='Статистика:',
+    disabled=True,  # Отключаем, т.к. пока доступен только один вариант
+    style=dict(description_width='150px')
+)
+
+# Выбор метода статистического теста
+test_method_dropdown = widgets.Dropdown(
+    options=[('T-test', 't_test'), ('Z-test', 'z_test')],
+    value='t_test',
+    description='Метод теста:',
+    style=dict(description_width='150px')
+)
+
+# Число прогонов эмуляции (не более 10 000)
+num_emulations_input = widgets.BoundedIntText(
+    value=1000,
+    min=100,
+    max=10000,
+    step=100,
+    description='Число эмуляций:',
+    style=dict(description_width='150px'),
+    layout=widgets.Layout(width='300px')
+)
+
+# Стартовый размер выборки (по умолчанию 1000)
+sample_size_input = widgets.IntText(
+    value=1000,
+    description='Размер выборки:',
+    style=dict(description_width='150px'),
+    layout=widgets.Layout(width='300px')
+)
+
+# Шаг увеличения размера выборки (по умолчанию 500)
+sample_step_input = widgets.IntText(
+    value=500,
+    description='Шаг выборки:',
+    style=dict(description_width='150px'),
+    layout=widgets.Layout(width='300px')
+)
+
 # Кнопка для запуска эмуляции
 run_emulation_button = widgets.Button(
     description='Запустить эмуляцию',
@@ -49,7 +112,12 @@ config_container = widgets.VBox([
     config_header,
     alpha_dropdown,
     target_power_input,
-    # Другие виджеты будут добавлены позже
+    mde_container,
+    statistic_dropdown,
+    test_method_dropdown,
+    num_emulations_input,
+    sample_size_input,
+    sample_step_input,
     run_emulation_button,
     config_output
 ])
@@ -62,10 +130,26 @@ def get_current_config():
     Returns:
         dict: Словарь с конфигурацией эксперимента
     """
+    # Получаем значение MDE
+    mde_value = mde_input.value
+    
+    # Проверка и преобразование значений
+    try:
+        sample_size = int(sample_size_input.value)
+        sample_step = int(sample_step_input.value)
+    except (ValueError, TypeError):
+        sample_size = 1000  # значение по умолчанию
+        sample_step = 500   # значение по умолчанию
+    
     config = {
         'alpha': alpha_dropdown.value,
         'target_power': target_power_input.value,
-        # Другие параметры будут добавлены позже
+        'mde_percent': mde_value,
+        'statistic': statistic_dropdown.value,
+        'test_method': test_method_dropdown.value,
+        'num_emulations': num_emulations_input.value,
+        'sample_size': sample_size,
+        'sample_step': sample_step
     }
     return config
 
