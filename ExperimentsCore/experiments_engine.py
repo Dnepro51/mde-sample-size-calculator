@@ -37,6 +37,8 @@ from Statistics.stat_test_methods import get_test_method
 from Statistics.mde_add_methods import get_effect_adder
 import ipywidgets as widgets
 from IPython.display import display, clear_output
+from tqdm.auto import tqdm
+from tqdm.notebook import tqdm as tqdm_notebook
 
 def run_experiment(rv_discrete, config, on_progress_update=None):
     """
@@ -76,76 +78,63 @@ def run_experiment(rv_discrete, config, on_progress_update=None):
     test_function = get_test_method(test_method)
     effect_adder = get_effect_adder(statistic)
     
-    # Выводим информацию о начале эксперимента
-    print(f"Запуск эксперимента с параметрами:")
-    print(f"  Статистика: {statistic}")
-    print(f"  Тест: {test_method}")
-    print(f"  Alpha: {alpha}")
-    print(f"  Целевая мощность: {target_power}")
-    print(f"  MDE: {mde_percent}%")
-    print(f"  Число эмуляций: {num_emulations}")
-    print(f"  Начальный размер выборки: {sample_size}")
-    print(f"  Шаг увеличения выборки: {sample_step}")
+    # Оценка количества итераций для tqdm
+    max_iterations = (max_sample_size - sample_size) // sample_step + 1
+    
+    # Создаем прогресс-бар tqdm для внешнего цикла
+    pbar = tqdm_notebook(
+        total=max_iterations, 
+        desc=f"Поиск размера выборки (MDE: {mde_percent}%, мощность: {target_power})",
+        leave=True
+    )
     
     # Внешний цикл - увеличение размера выборки
     current_size = sample_size
     sample_count = 0
     
-    while current_size <= max_sample_size:
-        print(f"\nТестируем размер выборки: {current_size}")
-        
-        # Внутренний цикл - эмуляции для текущего размера
-        successful_tests = 0
-        
-        # Отображаем прогресс через каждые 10% эмуляций
-        progress_step = max(1, num_emulations // 10)
-        
-        for i in range(num_emulations):
-            # Генерация выборок
-            control_sample = rv_discrete.rvs(size=current_size)
-            experiment_sample = effect_adder(control_sample, mde_percent)
+    try:
+        while current_size <= max_sample_size:
+            # Внутренний цикл - эмуляции для текущего размера
+            successful_tests = 0
             
-            # Проведение теста
-            _, is_significant = test_function(control_sample, experiment_sample, alpha)
-            if is_significant:
-                successful_tests += 1
+            # Выполняем эмуляции
+            for _ in range(num_emulations):
+                # Генерация выборок
+                control_sample = rv_discrete.rvs(size=current_size)
+                experiment_sample = effect_adder(control_sample, mde_percent)
                 
-            # Отображение прогресса внутреннего цикла
-            if (i + 1) % progress_step == 0 or i + 1 == num_emulations:
-                percent_done = (i + 1) / num_emulations * 100
-                print(f"  Прогресс: {i + 1}/{num_emulations} эмуляций ({percent_done:.1f}%)", end="\r")
-        
-        # Расчет мощности для текущего размера
-        power = successful_tests / num_emulations
-        results[current_size] = power
-        
-        # Выводим результат текущего размера выборки
-        print(f"\n  Результат: Мощность {power:.4f} при размере выборки {current_size}")
-        
-        # Обновляем прогресс через callback, если он предоставлен
-        sample_count += 1
-        if on_progress_update:
-            on_progress_update(current_size, power, target_power, sample_count, 
-                              (max_sample_size - sample_size) // sample_step + 1)
-        
-        # Проверка достижения целевой мощности
-        if power >= target_power:
-            print(f"\nДостигнута целевая мощность {target_power}!")
-            break
+                # Проведение теста
+                _, is_significant = test_function(control_sample, experiment_sample, alpha)
+                if is_significant:
+                    successful_tests += 1
             
-        # Увеличение размера выборки
-        current_size += sample_step
+            # Расчет мощности для текущего размера
+            power = successful_tests / num_emulations
+            results[current_size] = power
+            
+            # Обновляем прогресс через callback, если он предоставлен
+            sample_count += 1
+            if on_progress_update:
+                on_progress_update(current_size, power, target_power, sample_count, max_iterations)
+            
+            # Обновляем прогресс-бар с информацией о текущем размере и мощности
+            pbar.set_postfix({"выборка": current_size, "мощность": f"{power:.3f}"})
+            pbar.update(1)
+            
+            # Проверка достижения целевой мощности
+            if power >= target_power:
+                break
+                
+            # Увеличение размера выборки
+            current_size += sample_step
+    finally:
+        # Всегда закрываем прогресс-бар при завершении
+        pbar.close()
     
     # Создание DataFrame из результатов
     df_results = pd.DataFrame({
         'sample_size': list(results.keys()),
         'power': list(results.values())
     })
-    
-    print("\nЭксперимент завершен!")
-    if power >= target_power:
-        print(f"Минимальный размер выборки для достижения мощности {target_power}: {current_size}")
-    else:
-        print(f"Целевая мощность {target_power} не достигнута даже при максимальном размере выборки {max_sample_size}")
     
     return df_results
