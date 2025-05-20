@@ -34,7 +34,9 @@ Returns:
 4. Отслеживает долю симуляций, где is_significant=True, для расчёта мощности теста
 """
 
+import numpy as np
 from scipy import stats
+from statsmodels.stats.proportion import proportions_ztest
 
 
 def t_test(control_sample, experiment_sample, alpha):
@@ -52,11 +54,10 @@ def t_test(control_sample, experiment_sample, alpha):
     tuple
         (p_value, p_value < alpha)
     """
-    from scipy import stats
-    
     stat, p_value = stats.ttest_ind(control_sample, experiment_sample)
     
     return p_value, p_value < alpha
+
 
 def z_proportion_test(control_sample, experiment_sample, alpha):
     """
@@ -72,15 +73,12 @@ def z_proportion_test(control_sample, experiment_sample, alpha):
     tuple
         (p_value, p_value < alpha)
     """
-    import numpy as np
-    from scipy import stats
-    
     count1 = np.sum(control_sample)
     count2 = np.sum(experiment_sample)
     nobs1 = len(control_sample)
     nobs2 = len(experiment_sample)
     
-    stat, p_value = stats.proportions_ztest([count1, count2], [nobs1, nobs2])
+    stat, p_value = proportions_ztest([count1, count2], [nobs1, nobs2])
     
     return p_value, p_value < alpha
 
@@ -91,5 +89,17 @@ test_methods = {
     'z_proportion_test': z_proportion_test,
 }
 
+
 def get_test_method(method_name):
+    """
+    Возвращает функцию тестирования по её нейму в конфиге.
+    
+    Параметры:
+    method_name : str
+        Имя метода тестирования из словаря test_methods.
+        
+    Возвращает:
+    function
+        Функция тестирования, соответствующая указанному в конфиге имени теста.
+    """
     return test_methods[method_name]
