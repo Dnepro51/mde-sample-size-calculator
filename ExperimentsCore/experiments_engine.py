@@ -69,7 +69,7 @@ def run_experiment(rv_discrete, config, on_progress_update=None):
     sample_step = config['sample_step']
 
     # Максимальный размер выборки
-    max_sample_size = 500000
+    max_sample_size = 100000
     
     # Подготовка структуры для результатов
     results = {}  # sample_size -> power
