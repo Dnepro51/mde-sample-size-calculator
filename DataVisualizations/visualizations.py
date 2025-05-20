@@ -4,6 +4,27 @@ import numpy as np
 import pandas as pd
 
 
+def power_analysis_plot(results_df, target_power=None):
+    fig = px.line(
+        results_df, 
+        x='sample_size', 
+        y='power', 
+        markers=True,
+        title='Зависимость мощности от размера выборки'
+    )
+    
+    if target_power:
+        fig.add_hline(y=target_power, line_dash='dash', line_color='red')
+    
+    fig.update_layout(
+        yaxis_range=[0, 1.05],
+        xaxis_title='Размер выборки',
+        yaxis_title='Мощность'
+    )
+    
+    return fig
+
+
 def histogram(series, sample_size=10000):
     # Сэмплируем объекты
     sample = series.sample(n=sample_size, replace=True, random_state=42)
