@@ -27,6 +27,7 @@ ENV/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+core_test.ipynb
 
 # IDE specific files
 .idea/
