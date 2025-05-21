@@ -166,11 +166,12 @@ def get_current_config():
     return config
 
 # ============= Основная функция отображения =============
-def display_experiment_config_interface(current_statistics=None, on_config_created=None):
+def display_experiment_config_interface(parent_container=None, current_statistics=None, on_config_created=None):
     """
     Отображает интерфейс конфигурации экспериментов.
     
     Args:
+        parent_container: Родительский контейнер для добавления виджетов
         current_statistics (dict): Словарь с текущими статистиками распределения
                                  (ключи: 'mean', 'median', и т.д.)
         on_config_created (callable): Функция обратного вызова, которая будет вызвана
@@ -302,5 +303,20 @@ def display_experiment_config_interface(current_statistics=None, on_config_creat
     # Вызываем обновление статистики при инициализации
     update_calculated_stat()
     
-    # Отображение интерфейса
-    display(config_container)
+    # Создаем контейнер для эксперимента если не предоставлен родительский
+    if parent_container is None:
+        # Отображаем интерфейс напрямую
+        display(config_container)
+    else:
+        # Создаем новый раздел для конфигурации эксперимента
+        experiment_config_section = widgets.VBox()
+        
+        # Добавляем заголовок
+        section_header = widgets.HTML("<h3>Конфигурация эксперимента</h3>")
+        
+        # Добавляем все виджеты конфигурации
+        experiment_config_section.children = [section_header, config_container]
+        
+        # Добавляем раздел в родительский контейнер
+        if experiment_config_section not in parent_container.children:
+            parent_container.children = list(parent_container.children) + [experiment_config_section]

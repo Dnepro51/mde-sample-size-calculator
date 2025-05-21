@@ -8,18 +8,22 @@ import threading
 
 
 
-def column_selection_widgets(data_dict, on_column_selected=None):
+def column_selection_widgets(data_dict, parent_container=None, on_column_selected=None):
     """
     Args:
         data_dict: словарь с данными
+        parent_container: родительский контейнер для добавления виджетов
         on_column_selected: функция обратного вызова, которая будет вызвана 
                           когда пользователь выберет колонку
     """
     print("Инициализация виджетов...")
     # print(f"Callback функция: {on_column_selected}")
     
-    # Визуализация данных
-    display(data_dict['df'].head())
+    # Создаем заголовок
+    header = widgets.HTML("<h3>Выбор колонки для анализа</h3>")
+    
+    # Создаем виджет для визуализации данных
+    data_preview = widgets.HTML(data_dict['df'].head().to_html())
     
     # Создание виджетов
     column_selector = widgets.Dropdown(
@@ -44,15 +48,30 @@ def column_selection_widgets(data_dict, on_column_selected=None):
             output.clear_output(wait=True)
             # Показываем только превью выбранной колонки, но не выводим текст о выборе
             display(data_dict['df'][selected_column].head())
-        if on_column_selected:
-            on_column_selected(selected_column, data_dict)
+            # ВАЖНОЕ ИЗМЕНЕНИЕ: вызываем callback ВНУТРИ контекста output,
+            # чтобы сохранить контекст отображения для виджетов в JupyterLab
+            if on_column_selected:
+                on_column_selected(selected_column, data_dict)
     
     # Привязываем обработчики
     analyze_button.on_click(on_analyze_click)
     
-    # Отображение виджетов
-    column_selection_container = widgets.VBox([column_selector, analyze_button, output])
-    display(column_selection_container)
+    # Создаем контейнер для виджетов
+    column_selection_container = widgets.VBox([
+        header,
+        data_preview,
+        column_selector, 
+        analyze_button, 
+        output
+    ])
+    
+    # Отображаем контейнер
+    if parent_container is not None:
+        # Если предоставлен родительский контейнер, добавляем в него
+        parent_container.children = [column_selection_container]
+    else:
+        # Иначе отображаем напрямую
+        display(column_selection_container)
     
     
     

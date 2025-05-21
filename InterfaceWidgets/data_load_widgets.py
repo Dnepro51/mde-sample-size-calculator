@@ -202,10 +202,11 @@ def on_file_click(b):
         display(file_form)
 
 # ============= Основная функция отображения =============
-def display_interface(on_data_loaded=None):
+def display_interface(parent_container=None, on_data_loaded=None):
     """
     Отображает интерфейс загрузки данных
     Args:
+        parent_container: контейнер, в который будут добавлены виджеты интерфейса
         on_data_loaded: callback-функция, которая будет вызвана после успешной загрузки данных
     """
     def on_digger_execute(b):
@@ -284,10 +285,22 @@ def display_interface(on_data_loaded=None):
     digger_execute_button.on_click(on_digger_execute)  # Привязываем локальные обработчики
     file_process_button.on_click(on_file_process)      # Привязываем локальные обработчики
 
-    # Отображение интерфейса
-    display(cards_container)
-    display(form_container)
-    display(status_container)
-    display(config_output)
+    # Создаем контейнер для всего интерфейса загрузки
+    interface_container = widgets.VBox([
+        cards_container,
+        form_container,
+        status_container,
+        config_output
+    ])
+    
+    # Отображаем интерфейс
+    if parent_container is not None:
+        # Добавляем в родительский контейнер, если он предоставлен
+        parent_container.children = [interface_container]
+    else:
+        # Иначе отображаем напрямую
+        display(interface_container)
+    
+    # Инициализируем форму Digger по умолчанию
     with form_container:
         display(digger_form)
