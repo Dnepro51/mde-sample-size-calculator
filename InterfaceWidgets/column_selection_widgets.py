@@ -39,19 +39,13 @@ def column_selection_widgets(data_dict, on_column_selected=None):
     
     # Обработка выбора
     def on_analyze_click(b):
-        # print("Кнопка нажата!")
         selected_column = column_selector.value
-        # print(f"Выбрана колонка: {selected_column}")
-        # Показываем предпросмотр выбранной колонки
         with output:
             output.clear_output(wait=True)
+            # Показываем только превью выбранной колонки, но не выводим текст о выборе
             display(data_dict['df'][selected_column].head())
         if on_column_selected:
-            # print("Вызываем callback функцию...")
             on_column_selected(selected_column, data_dict)
-        else:
-            # print("Callback функция не определена!")
-            print("Callback функция не определена!")
     
     # Привязываем обработчики
     analyze_button.on_click(on_analyze_click)
