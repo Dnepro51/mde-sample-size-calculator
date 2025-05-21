@@ -14,6 +14,8 @@ def base_statistics(series):
         dict: Словарь с основными статистическими показателями
     """
     return {
+        'count': series.count(),
+        'nunique': series.nunique(),
         'mean': series.mean(),
         'median': series.median(),
         'std': series.std(),

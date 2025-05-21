@@ -67,7 +67,7 @@ statistic_dropdown = widgets.Dropdown(
 
 # Выбор метода статистического теста
 test_method_dropdown = widgets.Dropdown(
-    options=[('T-test', 't_test'), ('Z-proportion-test', 'z_proportion_test')],
+    options=[('T-test', 't_test')], #('Z-proportion-test', 'z_proportion_test')
     value='t_test',
     description='Метод теста:',
     style=dict(description_width='150px')
